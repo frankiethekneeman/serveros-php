@@ -1,4 +1,7 @@
 <?php
+/**
+ * ServerosConsumer Class.
+ */
 
 namespace Serveros\Serveros;
 
@@ -13,49 +16,50 @@ use GuzzleHttp\Client as Guzzle;
 use GuzzleHttp\Exception\RequestException;
 
 /**
- *  A Serveros Service Consumer Object.  Used to retrieve tickets from the Authentication Master
- *  to use a Service Provider on the Network.
- *  @extends Serveros\Serveros\Encrypter
+ * A Serveros Service Consumer Object.  Used to retrieve tickets from the Authentication Master
+ * to use a Service Provider on the Network.
+ *
+ * @author Francis J.. Van Wetering IV
  */
 class ServerosConsumer extends Encrypter {
 
     /**
-     *  The ID of this application.
+     * The ID of this application.
      */
     public $id;
 
     /**
-     *  The chosen Hash for interaction with the Authentication Master
+     * The chosen Hash for interaction with the Authentication Master
      */
     public $chosenHash;
 
     /**
-     *  The chosen Cipher for interaction with the Authentication Master
+     * The chosen Cipher for interaction with the Authentication Master
      */
     public $chosenCipher;
 
     /**
-     *  Master information.
+     * Master information.
      */
     public $master;
 
     /**
-     *  My Private Key.
+     * My Private Key.
      */
     public $privateKey;
 
     /**
-     *  Constructor.
-     *  
-     *  @param mixed $id Anything that can be (a) JSON encoded and (b) used by the 
-     *      Authentication Master to uniquely identify the consumer
-     *  @param String[] $supportedHashes A list of acceptable hashes, in order of descending preference
-     *  @param String[] $supportedCiphers A list of acceptable Ciphers, in order of descending preference
-     *  @param string $masterLocation the protocol/host/port on which the Authentication Master is listening
-     *  @param string $masterPublicKey the public key distributed by the Authentication Master - as a
-     *      PEM8 encoded string.
-     *  @param String $myPrivateKey The Private Key for the Consumer, as a PEM encoded string. The matching
-     *      Public key should be registered with the Authentication Master separately
+     * Constructor.
+     *
+     * @param mixed $id Anything that can be (a) JSON encoded and (b) used by the
+     *     Authentication Master to uniquely identify the consumer
+     * @param string[] $supportedHashes A list of acceptable hashes, in order of descending preference
+     * @param string[] $supportedCiphers A list of acceptable Ciphers, in order of descending preference
+     * @param string $masterLocation the protocol/host/port on which the Authentication Master is listening
+     * @param string $masterPublicKey the public key distributed by the Authentication Master - as a
+     *     PEM8 encoded string.
+     * @param String $myPrivateKey The Private Key for the Consumer, as a PEM encoded string. The matching
+     *     Public key should be registered with the Authentication Master separately
      */
     public function __construct($id, $supportedHashes, $supportedCiphers, $masterLocation, $masterPublicKey, $myPrivateKey) {
         parent::__construct($supportedCiphers, $supportedHashes);
@@ -76,11 +80,11 @@ class ServerosConsumer extends Encrypter {
     }
 
     /**
-     *  Simple method to build a ticket request.
-     *  
-     *  @param mixed $requested the ID of the service the ticket is requesting access to.
-     *  
-     *  @returns Array A properly formatted ticket.
+     * Simple method to build a ticket request.
+     *
+     * @param mixed $requested the ID of the service the ticket is requesting access to.
+     *
+     * @returns Array A properly formatted ticket.
      */
     public function buildRequestTicket($requested) {
         return [
@@ -95,25 +99,25 @@ class ServerosConsumer extends Encrypter {
     }
 
     /**
-     *  Request an Authorization ticket from the Authentication Master
-     *  
-     *  @param mixed requested the ID of the service the ticket is requesting access to.
-     *  
-     *  @return Array The successfully Retreived ticket.
-     *  
-     *  @throws RSAException IF there's any error Verifying, Decrypting, Encrypting, or signing.
-     *  @throws UnsupportedHashException If an unconfigured Hash is used by the Authentication Master
-     *  @throws CipherException If there's any error Enciphering or Deciphering
-     *  @throws UnsupportedCipherException If an unconfigured Cipher is still
-     *  @throws ProtocolException If the Master returns an unrecognized response.
-     *  @throws HTTPException If some other error happens during the HTTP Request.
-     *  @throws NonceException If the Server does not return the correct Nonce.
-     *  @throws StaleException If the Server's Response is stale.
+     * Request an Authorization ticket from the Authentication Master
+     *
+     * @param mixed requested the ID of the service the ticket is requesting access to.
+     *
+     * @return Array The successfully Retreived ticket.
+     *
+     * @throws RSAException IF there's any error Verifying, Decrypting, Encrypting, or signing.
+     * @throws UnsupportedHashException If an unconfigured Hash is used by the Authentication Master
+     * @throws CipherException If there's any error Enciphering or Deciphering
+     * @throws UnsupportedCipherException If an unconfigured Cipher is still
+     * @throws ProtocolException If the Master returns an unrecognized response.
+     * @throws HTTPException If some other error happens during the HTTP Request.
+     * @throws NonceException If the Server does not return the correct Nonce.
+     * @throws StaleException If the Server's Response is stale.
      */
     public function requestTicket($requested) {
         $requestObj = $this->buildRequestTicket($requested);
         $message = $this->encryptAndSign($requestObj);
-        try{ 
+        try{
             $json = json_encode($message);
             if (!$json) {
                 throw new JSONException(new Exception(json_last_error_msg()));
@@ -165,20 +169,20 @@ class ServerosConsumer extends Encrypter {
     }
 
     /**
-     *  Authorize a ticket to its intended Service.
-     *  
-     *  @param String $serviceLocation A URL for authorizing to the service.
-     *  @param Object $ticket A ticket retrieved from requestTicket
-     *  
-     *  @return Array Some Credentials, properly exchanged with the service.
-     *  
-     *  @throws CipherException If there's any error Enciphering or Deciphering.
-     *  @throws UnsupportedCipherException If this Consumer has not been configured to use the algorithm
-     *      in the ticket.
-     *  @throws ProtocolException If the Service Provider returns an unrecognized response.
-     *  @throws HTTPException If some other error happens during the HTTP Request.
-     *  @throws NonceException If the Server does not return the correct Nonce.
-     *  @throws StaleException If the Server's Response is stale.
+     * Authorize a ticket to its intended Service.
+     *
+     * @param String $serviceLocation A URL for authorizing to the service.
+     * @param Object $ticket A ticket retrieved from requestTicket
+     *
+     * @return Array Some Credentials, properly exchanged with the service.
+     *
+     * @throws CipherException If there's any error Enciphering or Deciphering.
+     * @throws UnsupportedCipherException If this Consumer has not been configured to use the algorithm
+     *     in the ticket.
+     * @throws ProtocolException If the Service Provider returns an unrecognized response.
+     * @throws HTTPException If some other error happens during the HTTP Request.
+     * @throws NonceException If the Server does not return the correct Nonce.
+     * @throws StaleException If the Server's Response is stale.
      */
     public function authorize($serviceLocation, $ticket) {
         $idObject = [
@@ -249,39 +253,39 @@ class ServerosConsumer extends Encrypter {
     }
 
     /**
-     *  A concatentation of Authorize and Request Ticket.
-     *  
-     *  @param String $serviceLocation A URL for authorizing to the service.
-     *  @param mixed requested the ID of the service the ticket is requesting access to.
+     * A concatentation of Authorize and Request Ticket.
      *
-     *  @return Array Some Credentials, properly exchanged with the service.
-     *  
-     *  @throws CipherException If there's any error Enciphering or Deciphering.
-     *  @throws UnsupportedCipherException If this Consumer has not been configured to use the algorithm
-     *      in the ticket.
-     *  @throws RSAException IF there's any error Verifying, Decrypting, Encrypting, or signing.
-     *  @throws UnsupportedHashException If an unconfigured Hash is used by the Authentication Master
-     *  @throws ProtocolException If any service returns an unrecognized response.
-     *  @throws HTTPException If some other error happens during the HTTP Request.
-     *  @throws NonceException If the Server does not return the correct Nonce.
-     *  @throws StaleException If the Server's Response is stale.
+     * @param string $serviceLocation A URL for authorizing to the service.
+     * @param string $requested the ID of the service the ticket is requesting access to.
+     *
+     * @return Array Some Credentials, properly exchanged with the service.
+     *
+     * @throws CipherException If there's any error Enciphering or Deciphering.
+     * @throws UnsupportedCipherException If this Consumer has not been configured to use the algorithm
+     *     in the ticket.
+     * @throws RSAException IF there's any error Verifying, Decrypting, Encrypting, or signing.
+     * @throws UnsupportedHashException If an unconfigured Hash is used by the Authentication Master
+     * @throws ProtocolException If any service returns an unrecognized response.
+     * @throws HTTPException If some other error happens during the HTTP Request.
+     * @throws NonceException If the Server does not return the correct Nonce.
+     * @throws StaleException If the Server's Response is stale.
      */
     public function getCredentials($serviceId, $serviceLocation) {
         return $this->authorize($serviceLocation, $this->requestTicket($serviceId));
     }
 
     /**
-     *  A thin wrapper which provides the correct information.
-     *  
-     *  @param Array $message The message to be encrypted and signed.
-     *  
-     *  @return Array the encrypted message and a signature for it.
-     *  
-     *  @throws RSAException If there's any error with RSA Encryption/Signature
-     *  @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm.
-     *  @throws CipherException If there's any error Enciphering.
-     *  @throws UnrecognizedCipherException If the cipher in question is not one that can we have data on.
-     *  @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm.
+     * A thin wrapper which provides the correct information.
+     *
+     * @param Array $message The message to be encrypted and signed.
+     *
+     * @return Array the encrypted message and a signature for it.
+     *
+     * @throws RSAException If there's any error with RSA Encryption/Signature
+     * @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm.
+     * @throws CipherException If there's any error Enciphering.
+     * @throws UnrecognizedCipherException If the cipher in question is not one that can we have data on.
+     * @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm.
      */
     public function encryptAndSign($message) {
         return parent::encryptAndSign( $this->master["publicKey"]
@@ -293,20 +297,20 @@ class ServerosConsumer extends Encrypter {
     }
 
     /**
-     *  A thin wrapper which provides the correct information.
-     *  
-     *  @param Array $message The encrypted, Singed message.
-     *  
-     *  @return Array the decrypted message.
-     *  
-     *  @throws RSAException IF there's any error Verifying or Decrypting
-     *  @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm
-     *      used to sign the message.
-     *  @throws CipherException If there's any error Enciphering.
-     *  @throws UnrecognizedCipherException If the cipher used to encrypt the message is not one 
-     *      that can we have data on.
-     *  @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm
-     *      used to encipher the message.
+     * A thin wrapper which provides the correct information.
+     *
+     * @param Array $message The encrypted, Singed message.
+     *
+     * @return Array the decrypted message.
+     *
+     * @throws RSAException IF there's any error Verifying or Decrypting
+     * @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm
+     *     used to sign the message.
+     * @throws CipherException If there's any error Enciphering.
+     * @throws UnrecognizedCipherException If the cipher used to encrypt the message is not one
+     *     that can we have data on.
+     * @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm
+     *     used to encipher the message.
      */
     public function decryptAndVerify($message) {
         return parent::decryptAndVerify($this->privateKey, $this->master["publicKey"], $message);

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpdoc>
+  <title>Serveros PHP</title>
+  <parser>
+    <default-package-name>Serveros</default-package-name>
+    <encoding>UTF8</encoding>
+    <target>docs</target>
+  </parser>
+  <transformer>
+    <target>docs</target>
+  </transformer>
+  <transformations>
+    <template name="responsive-twig"/>
+  </transformations>
+  <logging>
+    <level>emerg</level>
+  </logging>
+  <files>
+    <directory>src</directory>
+  </files>
+</phpdoc>

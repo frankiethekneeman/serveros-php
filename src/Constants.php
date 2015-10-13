@@ -1,9 +1,18 @@
 <?php
+/**
+ * Constants Class.
+ */
 namespace Serveros\Serveros;
 
+/**
+ * A class full of constants for use elsewhere so I don't have to stare at its ugly face.
+ *
+ * @author Francis J.. Van Wetering IV
+ */
 class Constants {
+
     /**
-     *  CipherData (copied from Node).
+     * CipherData (copied from Node).
      */
     public static $CIPHERDATA =  [
         'CAST-cbc' => [
@@ -419,12 +428,14 @@ class Constants {
             'key' => 128,
         ],
     ];
+
     /**
-     *  A list of available Ciphers.
+     * A list of available Ciphers.
      */
     public static $CIPHERS;
+
     /**
-     *  A list of available Hashes.
+     * A list of available Hashes.
      */
     public static $HASHES;
 }

@@ -1,5 +1,5 @@
 {
-    "name": "Serveros/Serveros",
+    "name": "serveros/serveros",
     "autoload": {
         "psr-4": {
             "Serveros\\Serveros\\": "src/"

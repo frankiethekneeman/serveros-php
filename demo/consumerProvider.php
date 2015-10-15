@@ -6,8 +6,8 @@ use GuzzleHttp\Client as Guzzle;
 use Serveros\Serveros\ServerosConsumer;
 use GuzzleHttp\Exception\RequestException;
 
-$masterPublicPem = file_get_contents(__DIR__ . '/../../serveros/demo/keys/master.pem8');
-$myPrivatePem = file_get_contents(__DIR__ . '/../../serveros/demo/keys/serverA');
+$masterPublicPem = file_get_contents(__DIR__ . '/keys/master.pem8');
+$myPrivatePem = file_get_contents(__DIR__ . '/keys/serverA');
 
 $consumer = new ServerosConsumer("Application A"
     , ['md5', 'sha256', 'sha1']
@@ -18,20 +18,13 @@ $consumer = new ServerosConsumer("Application A"
 );
 
 $credentials = $consumer->getCredentials("Application B", "http://localhost:8000/demo/providerTest.php");
+echo "\nConsumer now has Credentials:\n\n";
 var_dump($credentials);
-
 
 $client = new Guzzle();
 
 $signer = new Hawk($credentials['id'], $credentials['key'], $credentials['algorithm']);
 $client->getEmitter()->attach($signer);
-try {
-    $response = $client->get("http://localhost:8000/demo/providerHawkTest.php");
-} catch (RequestException $e) {
-    $response = $e->getResponse();
-    echo $response->getBody();
-    echo "\n\n";
-    die();
-}
+$response = $client->get("http://localhost:8000/demo/providerHawkTest.php");
+echo "\nHawk Response:\n\n";
 var_dump($response->json());
-

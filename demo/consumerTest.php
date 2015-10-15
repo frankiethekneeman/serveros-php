@@ -5,8 +5,8 @@ use ComplexMedia\Guzzle\Plugin\Hawk;
 use GuzzleHttp\Client as Guzzle;
 use Serveros\Serveros\ServerosConsumer;
 
-$masterPublicPem = file_get_contents(__DIR__ . '/../../serveros/demo/keys/master.pem8');
-$myPrivatePem = file_get_contents(__DIR__ . '/../../serveros/demo/keys/serverA');
+$masterPublicPem = file_get_contents(__DIR__ . '/keys/master.pem8');
+$myPrivatePem = file_get_contents(__DIR__ . '/keys/serverA');
 
 $consumer = new ServerosConsumer("Application A"
     , ['md5', 'sha256', 'sha1']
@@ -17,6 +17,7 @@ $consumer = new ServerosConsumer("Application A"
 );
 
 $credentials = $consumer->getCredentials("Application B", "http://localhost:3501/authenticate");
+echo "\nConsumer now has Credentials:\n\n";
 var_dump($credentials);
 
 $client = new Guzzle();
@@ -24,4 +25,5 @@ $client = new Guzzle();
 $signer = new Hawk($credentials['id'], $credentials['key'], $credentials['algorithm']);
 $client->getEmitter()->attach($signer);
 $response = $client->get("http://localhost:3501/test");
+echo "\nHawk Response:\n\n";
 var_dump($response->json());

@@ -111,7 +111,6 @@ class ServerosServiceProvider extends Encrypter {
             , "authData" => $ticket["authData"]
             , "requester" => $ticket["requester"]
             , "hash" => $ticket["hash"]
-            , "cipher" => $ticket["cipher"]
             , "expires" => $ticket["expires"]
             , "oneTimeCredentials" => $ticket["oneTimeCredentials"]
             , "nonces" => [

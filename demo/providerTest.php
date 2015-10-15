@@ -6,8 +6,8 @@ use GuzzleHttp\Client as Guzzle;
 use Serveros\Serveros\ServerosConsumer;
 use Serveros\Serveros\ServerosServiceProvider;
 
-$masterPublicPem = file_get_contents(__DIR__ . '/../../serveros/demo/keys/master.pem8');
-$serviceProviderPrivatePem = file_get_contents(__DIR__ . '/../../serveros/demo/keys/serverB');
+$masterPublicPem = file_get_contents(__DIR__ . '/keys/master.pem8');
+$serviceProviderPrivatePem = file_get_contents(__DIR__ . '/keys/serverB');
 
 $provider = new ServerosServiceProvider("Application B"
     , ['md5', 'sha256', 'sha1']

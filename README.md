@@ -1,21 +1,46 @@
 An in progress PHP Implementation of [Serveros](https://github.com/frankiethekneeman/serveros).
 
-##How?
+##How do I consume Services?
 
     use Serveros\Serveros\ServerosConsumer;
 
-    $masterPublicPem = file_get_contents('../serveros/demo/keys/master.pem8');
-    $myPrivatePem = file_get_contents('../serveros/demo/keys/serverA');
+    $masterPublicPem = file_get_contents($master);
+    $myPrivatePem = file_get_contents($private);
 
     $consumer = new ServerosConsumer("Application A"
-        , ['md5', 'sha256', 'sha1']
-        , ['des', 'aes128']
+        , ['sha256', 'sha1']
+        , ['aes128']
         , 'http://localhost:3500'
         , $masterPublicPem
         , $myPrivatePem
     );
 
     $credentials = $consumer->getCredentials("Application B", "http://localhost:3501/authenticate");
+
+##How do I provide Services?
+
+    use Serveros\Serveros\ServerosServiceProvider;
+
+    $masterPublicPem = file_get_contents($master);
+    $serviceProviderPrivatePem = file_get_contents($private);
+
+    $provider = new ServerosServiceProvider("Application B"
+        , ['sha256', 'sha1']
+        , ['aes128']
+        , $masterPublicPem
+        , $serviceProviderPrivatePem
+    );
+
+    $entityBody = file_get_contents('php://input');
+    $greeting = json_decode($entityBody, true);
+    $authorized = $provider->validate($greeting);
+    $hawkCredentials = [
+        "key" => $authorized["secret"]
+        , "algorithm" => $authorized["hash"]
+        , "expires" => $authorized["expires"]
+        , "authData" => $authorized["authData"]
+        , "consumer" => $authorized["requester"]
+    ];
 
 ## Contributing 
 

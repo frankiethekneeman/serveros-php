@@ -60,6 +60,8 @@ class ServerosConsumer extends Encrypter {
      *     PEM8 encoded string.
      * @param String $myPrivateKey The Private Key for the Consumer, as a PEM encoded string. The matching
      *     Public key should be registered with the Authentication Master separately
+     *  
+     * @param throws RSAException If either of the keys passed is invalid.
      */
     public function __construct($id, $supportedHashes, $supportedCiphers, $masterLocation, $masterPublicKey, $myPrivateKey) {
         parent::__construct($supportedCiphers, $supportedHashes);

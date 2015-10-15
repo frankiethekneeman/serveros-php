@@ -22,8 +22,8 @@ class ServerosException extends \Exception {
      * @param {String} [message] a simple message describing the Error.
      * @param {Integer} [statusCode] A status code for use.
      */
-    public function __construct($message, $statusCode) {
-        parent::__construct($message);
+    public function __construct($message = null, $statusCode = null) {
+        parent::__construct($message ?: "No Message Provided");
         if ($statusCode) $this->statusCode = $statusCode;
     }
 

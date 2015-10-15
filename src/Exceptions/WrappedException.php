@@ -11,7 +11,7 @@ use Serveros\Serveros\Exceptions\ServerosException;
  *
  * @author Francis J.. Van Wetering IV
  */
-class WrappedException {
+class WrappedException extends ServerosException {
 
     /**
      * The wrapped Exception
@@ -24,8 +24,8 @@ class WrappedException {
      * @param \Exception $e The wrapped Error
      * @param string $message A message about where the error occured.
      */
-    public function __construct($e, $message) {
-        parent::__construct($message);
+    public function __construct($e, $message = null, $code = null) {
+        parent::__construct($message, $code);
         if ($e) $this->e = $e;
     }
 

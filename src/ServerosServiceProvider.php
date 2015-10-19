@@ -62,16 +62,10 @@ class ServerosServiceProvider extends Encrypter {
         $this->id = $id;
         $this->chosenHash = $this->hashPrefs[0];
         $this->chosenCipher = $this->cipherPrefs[0];
-        $this->privateKey = openssl_get_privatekey($myPrivateKey);
-        if (!$this->privateKey){
-            throw new RSAException(new Exception(openssl_error_string()));
-        }
+        $this->privateKey = $this->import($myPrivateKey, true);
         $this->master = [
-            "publicKey" => openssl_get_publickey($masterPublicKey)
+            "publicKey" => $this->import($masterPublicKey, false)
         ];
-        if (!$this->master["publicKey"]){
-            throw new RSAException(new Exception(openssl_error_string()));
-        }
     }
 
     /**
@@ -97,7 +91,7 @@ class ServerosServiceProvider extends Encrypter {
             , $ticket["oneTimeCredentials"]["cipher"]
         ), true);
         if (!$id) {
-            throw new JSONException(new Exception(json_last_error_msg()));
+            throw new JSONException(new \Exception(json_last_error_msg()));
         }
         if($id["serverNonce"] != $ticket["serverNonce"])
             throw new NonceError();
@@ -143,7 +137,7 @@ class ServerosServiceProvider extends Encrypter {
             , "ts" => time() * 1000
         ]);
         if (!$ack) {
-            throw new JSONException(new Exception(json_last_error_msg()));
+            throw new JSONException(new \Exception(json_last_error_msg()));
         }
         $ciphertext = $this->encipher( 
             $ack

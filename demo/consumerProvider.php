@@ -4,7 +4,6 @@ include_once( __DIR__ . '/../vendor/autoload.php');
 use ComplexMedia\Guzzle\Plugin\Hawk;
 use GuzzleHttp\Client as Guzzle;
 use Serveros\Serveros\ServerosConsumer;
-use GuzzleHttp\Exception\RequestException;
 
 $masterPublicPem = file_get_contents(__DIR__ . '/keys/master.pem8');
 $myPrivatePem = file_get_contents(__DIR__ . '/keys/serverA');

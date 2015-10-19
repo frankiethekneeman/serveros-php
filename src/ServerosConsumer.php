@@ -68,17 +68,11 @@ class ServerosConsumer extends Encrypter {
         $this->id = $id;
         $this->chosenHash = $this->hashPrefs[0];
         $this->chosenCipher = $this->cipherPrefs[0];
-        $this->privateKey = openssl_get_privatekey($myPrivateKey);
-        if (!$this->privateKey){
-            throw new RSAException(new Exception(openssl_error_string()));
-        }
+        $this->privateKey = $this->import($myPrivateKey, true);
         $this->master = [
             "host" => $masterLocation
-            , "publicKey" => openssl_get_publickey($masterPublicKey)
+            , "publicKey" => $this->import($masterPublicKey, false)
         ];
-        if (!$this->master["publicKey"]){
-            throw new RSAException(new Exception(openssl_error_string()));
-        }
     }
 
     /**
@@ -122,7 +116,7 @@ class ServerosConsumer extends Encrypter {
         try{
             $json = json_encode($message);
             if (!$json) {
-                throw new JSONException(new Exception(json_last_error_msg()));
+                throw new JSONException(new \Exception(json_last_error_msg()));
             }
             $client = new Guzzle();
             $response = $client->get("{$this->master["host"]}/authenticate", [
@@ -201,7 +195,7 @@ class ServerosConsumer extends Encrypter {
         ];
         $json = json_encode($idObject);
         if (!$json) {
-            throw new JSONException(new Exception(json_last_error_msg()));
+            throw new JSONException(new \Exception(json_last_error_msg()));
         }
         $greeting = [
             "id" => $this->encipher(
@@ -214,7 +208,7 @@ class ServerosConsumer extends Encrypter {
         ];
         $json = json_encode($greeting);
         if (!$json) {
-            throw new JSONException(new Exception(json_last_error_msg()));
+            throw new JSONException(new \Exception(json_last_error_msg()));
         }
         try {
             $client = new Guzzle();

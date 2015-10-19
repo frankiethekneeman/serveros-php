@@ -6,6 +6,7 @@
 namespace Serveros\Serveros;
 
 use Serveros\Serveros\Constants;
+use Serveros\Serveros\Exceptions\ServerosException;
 use Serveros\Serveros\Exceptions\Crypto\UnrecognizedCipherException;
 use Serveros\Serveros\Exceptions\Crypto\UnsupportedCipherException;
 use Serveros\Serveros\Exceptions\Crypto\UnsupportedHashException;
@@ -61,6 +62,33 @@ class Encrypter {
             array_values(array_unique(array_intersect($hashPrefs, Constants::$HASHES)))
             :
             Constants::$HASHES;
+    }
+    /**
+     *  Import a key, or set of keys, from a string to a PHP OPENSSL format.
+     *  
+     *  @param mixed $key A Key, or an array of keys, in PKCS8 PEM strings.
+     *  @param boolean $private True if private keys, False if public keys.
+     *  
+     *  @return mixed The imported key, or keys.
+     *  
+     *  @throws RSAException if there's an import error.
+     */
+    public function import($key, $private) {
+        $toReturn = [];
+        $toParse = is_array($key)? $key : [$key];
+        foreach ($toParse AS $k) {
+            $parsed = $private ?
+                openssl_get_privatekey($k)
+                :
+                openssl_get_publickey($k)
+                ;
+            
+            if (!$parsed) {
+                throw new RSAException(new \Exception(openssl_error_string()));
+            }
+            $toReturn[] = $parsed;
+        }
+        return is_array($key) ? $toReturn : $toReturn[0];
     }
 
     /**
@@ -131,7 +159,7 @@ class Encrypter {
             , base64_decode($iv)
         );
         if (!$deciphered) {
-            throw new CipherException(new Exception(openssl_error_string()));
+            throw new CipherException(new \Exception(openssl_error_string()));
         }
         $deciphered = preg_replace($this->PADDING_CHARACTERS, '', $deciphered);
         return $deciphered;
@@ -162,7 +190,7 @@ class Encrypter {
             , base64_decode($initialVector)
         );
         if (!$enciphered) {
-            throw new CipherException(new Exception(openssl_error_string()));
+            throw new CipherException(new \Exception(openssl_error_string()));
         }
         return base64_encode($enciphered);
     }
@@ -184,6 +212,8 @@ class Encrypter {
      * @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm.
      */
     public function encrypt($rsaKey, $data, $algorithm) {
+        if( is_array($rsaKey) && !isset($rsaKey['key']))
+            $rsaKey = $rsaKey[0];
         $credentials = Encrypter::getOneTimeCredentials($algorithm);
         $enciphered = Encrypter::encipher($data, $credentials["key"], $credentials["iv"], $algorithm);
         $lock = [
@@ -193,10 +223,43 @@ class Encrypter {
         ];
         openssl_public_encrypt(json_encode($lock), $encrypted, $rsaKey, OPENSSL_PKCS1_OAEP_PADDING);
         if (!$encrypted) {
-            throw new RSAException(new Exception(openssl_error_string()));
+            throw new RSAException(new \Exception(openssl_error_string()));
         }
         $cryptext = "$enciphered{$this->DELIMITER}" . base64_encode($encrypted);
         return $cryptext;
+    }
+
+    /**
+     * Decrypt the output of the encrypt function with a set of possible RSK Keys.
+     *
+     * @param String[] $rsaKeyArray An array of RSA Keys (Private)
+     * @param String $data The output of a previous call to Encrypt
+     *
+     * @return Array the JSON_Decoded plaintext.
+     *
+     * @throws CipherException If there's any error Enciphering.
+     * @throws RSAException If there's any error with RSA Encryption.
+     * @throws UnrecognizedCipherException If the cipher in question is not one that can we have data on.
+     * @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm.
+     */
+    public function decryptArray($rsaKeyArray, $data) {
+        if( !is_array($rsaKeyArray) || isset($rsaKeyArray['key']))
+            return $this->decrypt($rsaKeyArray, $data);
+        $err = null;
+        foreach ($rsaKeyArray AS $i => $rsaKey) {
+            try {
+                $toReturn = $this->decrypt($rsaKey, $data);
+                $toReturn["chosen"] = $i;
+                return $toReturn;
+            } catch (ServerosException $e) {
+                if (floor($e->statusCode/100) == 4)
+                    throw $e;
+                $err = $e;
+            } catch (\Exception $e) {
+                $err = $e;
+            }
+        }
+        throw $err;
     }
 
     /**
@@ -213,10 +276,12 @@ class Encrypter {
      * @throws UnsupportedCipherException If this Encrypter has not been configured to use the algorithm.
      */
     public function decrypt($rsaKey, $data) {
+        if( is_array($rsaKey) && !isset($rsaKey['key']))
+            return $this->decryptArray($rsaKey, $data);
         $pieces = explode(':', $data);
         openssl_private_decrypt(base64_decode($pieces[1]), $decrypted, $rsaKey, OPENSSL_PKCS1_OAEP_PADDING);
         if (!$decrypted) {
-            throw new RSAException(new Exception(openssl_error_string()));
+            throw new RSAException(new \Exception(openssl_error_string()));
         }
         $credentials = json_decode($decrypted, true);
         $deciphered = Encrypter::decipher($pieces[0], $credentials["key"], $credentials["iv"], $credentials["algorithm"]);
@@ -236,14 +301,49 @@ class Encrypter {
      * @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm.
      */
     public function sign($rsaKey, $data, $algorithm) {
+        if( is_array($rsaKey) && !isset($rsaKey['key']))
+            $rsaKey = $rsaKey[0];
         if (!in_array($algorithm, $this->hashPrefs)) {
             throw new UnsupportedHashException($algorithm, $this->hashPrefs);
         }
         $ret = openssl_sign($data, $signed, $rsaKey, $algorithm);
         if (!$ret) {
-            throw new RSAException(new Exception(openssl_error_string()));
+            throw new RSAException(new \Exception(openssl_error_string()));
         }
         return base64_encode($signed);
+    }
+
+    /**
+     * Verify a Signature - using an Array of keys.
+     *
+     * @param Stringp[] $rsaKey An array of RSA Keys (Public Key)
+     * @param String $data The previously signed data.
+     * @param String $algorithm The Hash algorithm to use whilst calculating the HMAC
+     * @param String $signature The previously generated Signature - as a base64 encoded String.
+     *
+     * @return True if the verification succeeded, false otherwise.
+     *
+     * @throws RSAException IF there's any error Verifying.
+     * @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm.
+     */
+    public function verifyArray($rsaKeyArray, $data, $algorithm, $signature) {
+        if( !is_array($rsaKeyArray) || isset($rsaKeyArray['key']))
+            return $this->decrypt($rsaKeyArray, $data);
+        $err = null;
+        foreach ($rsaKeyArray AS $i => $rsaKey) {
+            try {
+                $toReturn = $this->verify($rsaKey, $data, $algorithm, $signature);
+                $toReturn["chosen"] = $i;
+                return $toReturn;
+            } catch (ServerosException $e) {
+                if (floor($e->statusCode/100) == 4)
+                    throw $e;
+                $err = $e;
+            } catch (\Exception $e) {
+                $err = $e;
+            }
+        }
+        throw $err;
     }
 
     /**
@@ -260,14 +360,21 @@ class Encrypter {
      * @throws UnsupportedHashException If this Encrypter has not been configured to use the algorithm.
      */
     public function verify($rsaKey, $data, $algorithm, $signature) {
+        if( is_array($rsaKey) && !isset($rsaKey['key']))
+            return $this->verifyArray($rsaKey, $data, $algorithm, $signature);
         if (!in_array($algorithm, $this->hashPrefs)) {
             throw new UnsupportedHashException($algorithm, $this->hashPrefs);
         }
         $ret = openssl_verify($data, base64_decode($signature), $rsaKey, $algorithm);
         if ($ret == -1) {
-            throw new RSAException(new Exception(openssl_error_string()));
+            throw new RSAException(new \Exception(openssl_error_string()));
         }
-        return !!$ret;
+        if (!$ret) {
+            throw new VerificationException();
+        }
+        return [
+            "verified" => true
+        ];
     }
 
     /**
